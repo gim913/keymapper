@@ -24,6 +24,15 @@ local Error = {
 	Access_Denied = 5
 }
 
+scancode_rev = {}
+scancode_longest = 0
+local function buildReverseMap()
+	for k, v in pairs(scancode) do
+		scancode_rev[v] = k
+		scancode_longest = math.max(scancode_longest, #k)
+	end
+end
+
 local function parseData(buf, bufSize)
 	if bufSize < 12 then
 		print("Invalid data in 'Scancode map'")
@@ -35,18 +44,22 @@ local function parseData(buf, bufSize)
 		return
 	end
 
-	-- +8 not +12 to make lua-like loop from 1,not from 0 :>
-	local m = ffi.cast('ScancodeMapping*', buf+8)
-	if m[t.count].src ~= 0 or m[t.count].dst ~= 0 then
+	local m = ffi.cast('ScancodeMapping*', buf+12)
+	if m[t.count-1].src ~= 0 or m[t.count-1].dst ~= 0 then
 		print("'Scancode map' doesn't have terminating entry")
 		return
 	end
-	for i=1,t.count do
-		print(("%d Pressing %04x will generate %04x"):format(i, m[i].src, m[i].dst))
+	
+	-- not pretty, but who cares ;p
+	local fmtString = ("%%d. Pressing %% %ds will generate %% %ds (%%04x -> %%04x)"):format(scancode_longest, scancode_longest)
+	for i=0,t.count-2 do
+		print(fmtString:format(i, scancode_rev[m[i].src], scancode_rev[m[i].dst], m[i].src, m[i].dst))
 	end
 end
 
 local function main()
+	buildReverseMap()
+
 	local k = ffi.new("void*[1]", nil)
 	local ret = ffi.C.RegOpenKeyExA(Hkey.Local_Machine, "SYSTEM\\CurrentControlSet\\Control\\Keyboard Layout", 0, Access.Key_RW, k)
 	if ret == 5 then
