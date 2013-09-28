@@ -46,28 +46,31 @@ local function parseData(buf, bufSize)
 	end
 end
 
-local k = ffi.new("void*[1]", nil)
-local ret = ffi.C.RegOpenKeyExA(Hkey.Local_Machine, "SYSTEM\\CurrentControlSet\\Control\\Keyboard Layout", 0, Access.Key_RW, k)
-if ret == 5 then
-	print ('You need administrator privileges to alter scancode map')
-	return 2
-end
+local function main()
+	local k = ffi.new("void*[1]", nil)
+	local ret = ffi.C.RegOpenKeyExA(Hkey.Local_Machine, "SYSTEM\\CurrentControlSet\\Control\\Keyboard Layout", 0, Access.Key_RW, k)
+	if ret == 5 then
+		print ('You need administrator privileges to alter scancode map')
+		return 2
+	end
 
-if ret ~= 0 then
-	print("couldn't open key, quitting")
-	return 3
-end
+	if ret ~= 0 then
+		print("couldn't open key, quitting")
+		return 3
+	end
 
-local dataSize = ffi.new("uint32_t[1]", 0)
+	local dataSize = ffi.new("uint32_t[1]", 0)
 
--- query for the number of bytes we'll need to allocate
-ret = ffi.C.RegQueryValueExA(k[0], "Scancode Map", nil, nil, nil, dataSize)
-if ret == 0 then
-	local temp = dataSize[0]
-	local buf = ffi.new('uint8_t[?]', dataSize[0])
-	ret = ffi.C.RegQueryValueExA(k[0], "Scancode Map", nil, nil, buf, dataSize)
-	if ret == 0 and dataSize[0] == temp then
-		parseData(buf, dataSize[0])
+	-- query for the number of bytes we'll need to allocate
+	ret = ffi.C.RegQueryValueExA(k[0], "Scancode Map", nil, nil, nil, dataSize)
+	if ret == 0 then
+		local temp = dataSize[0]
+		local buf = ffi.new('uint8_t[?]', dataSize[0])
+		ret = ffi.C.RegQueryValueExA(k[0], "Scancode Map", nil, nil, buf, dataSize)
+		if ret == 0 and dataSize[0] == temp then
+			parseData(buf, dataSize[0])
+		end
 	end
 end
 
+main()
