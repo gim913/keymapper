@@ -10,6 +10,14 @@ typedef struct { uint32_t version, flags, count; } ScancodeHeader;
 ]]
 
 require('scancode1')
+-- if for some unknown reason, you have keyboard
+-- that isn't even good enough to throw it to trash,
+-- you might want to use scancode2, a.k.a. us set 2
+--require('scancode2')
+--
+-- there is also us set 3 which seems a bif more sensible than us-2
+-- but I'll probably add it later
+
 require('mapping')
 
 local Hkey = {
