@@ -2,6 +2,7 @@ local ffi = require('ffi')
 ffi.cdef[[
 int32_t RegOpenKeyExA(void* hKey, const char* lpSubKey, uint32_t reserved, uint32_t samDesired, void** phkResult);
 int32_t RegQueryValueExA(void* hKey, const char* lpValueName, uint32_t* reserved, uint32_t* type, uint8_t* outData, uint32_t* outDataSize);
+int32_t RegSetValueExA(void* hKey, const char* lpValueName, uint32_t reserved, uint32_t type, uint8_t* data, uint32_t dataSize);
 #pragma pack(1)
 typedef struct { uint16_t dst; uint16_t src; } ScancodeMapping;
 typedef struct { uint32_t version, flags, count; } ScancodeHeader;
@@ -9,9 +10,14 @@ typedef struct { uint32_t version, flags, count; } ScancodeHeader;
 ]]
 
 require('scancode1')
+require('mapping')
 
 local Hkey = {
 	Local_Machine = ffi.cast("void*", 0x80000002)
+}
+
+local ValType = {
+	Binary = 3
 }
 
 local Access = {
@@ -57,7 +63,36 @@ local function parseData(buf, bufSize)
 	end
 end
 
+local function saveMapping(k)
+	local l = 12 + 4*(1 + #mapSrc)
+	local buf = ffi.new('uint8_t[?]', l)
+	local t = ffi.cast('ScancodeHeader*', buf)
+	local m = ffi.cast('ScancodeMapping*', buf+12)
+	t.version = 0
+	t.flags = 0
+	t.count = #mapSrc + 1
+
+	for k=1,#mapSrc do
+		m[k-1].src = mapSrc[k]
+		m[k-1].dst = mapDst[k]
+	end
+	m[#mapSrc].src = 0
+	m[#mapSrc].dst = 0
+
+	local ret = ffi.C.RegSetValueExA(k[0], "Scancode Map", 0, ValType.Binary, buf, l);
+	if ret ~= 0 then
+		print('Some error occured while saving data, you better check it by hand...')
+		return
+	else
+		print('Mapping saved in registry, verifying...')
+	end
+end
+
 local function main()
+	if #mapSrc ~= #mapDst then
+		print ("error in mapping.lua, number of elements, doesn't match")
+		return
+	end
 	buildReverseMap()
 
 	local k = ffi.new("void*[1]", nil)
@@ -71,6 +106,8 @@ local function main()
 		print("couldn't open key, quitting")
 		return 3
 	end
+
+	saveMapping(k)
 
 	local dataSize = ffi.new("uint32_t[1]", 0)
 
