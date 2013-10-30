@@ -72,20 +72,25 @@ local function parseData(buf, bufSize)
 end
 
 local function saveMapping(k)
-	local l = 12 + 4*(1 + #mapSrc)
+	local mapLen = 0
+	for _ in pairs(mapSrc) do mapLen = mapLen + 1 end
+	local l = 12 + 4*(1 + mapLen)
 	local buf = ffi.new('uint8_t[?]', l)
 	local t = ffi.cast('ScancodeHeader*', buf)
 	local m = ffi.cast('ScancodeMapping*', buf+12)
 	t.version = 0
 	t.flags = 0
-	t.count = #mapSrc + 1
 
-	for k=1,#mapSrc do
-		m[k-1].src = mapSrc[k]
-		m[k-1].dst = mapDst[k]
+	local i = 0
+	for mSrc,mDst in pairs(mapSrc) do
+		print (mSrc, mDst)
+		m[i].src = mSrc
+		m[i].dst = mDst
+		i = i + 1
 	end
-	m[#mapSrc].src = 0
-	m[#mapSrc].dst = 0
+	m[i].src = 0
+	m[i].dst = 0
+	t.count = i + 1
 
 	local ret = ffi.C.RegSetValueExA(k[0], "Scancode Map", 0, ValType.Binary, buf, l);
 	if ret ~= 0 then
@@ -97,10 +102,6 @@ local function saveMapping(k)
 end
 
 local function main()
-	if #mapSrc ~= #mapDst then
-		print ("error in mapping.lua, number of elements, doesn't match")
-		return
-	end
 	buildReverseMap()
 
 	local k = ffi.new("void*[1]", nil)
