@@ -18,4 +18,6 @@ mapSrc = {
 ,      [scancode.SC_T] = scancode.SC_F
 ,      [scancode.SC_D] = scancode.SC_A
 ,      [scancode.SC_A] = scancode.SC_D
+,      [scancode.SC_G] = scancode.SC_N
+,      [scancode.SC_N] = scancode.SC_G
 }

@@ -83,7 +83,7 @@ local function saveMapping(k)
 
 	local i = 0
 	for mSrc,mDst in pairs(mapSrc) do
-		print (mSrc, mDst)
+		--print (mSrc, mDst)
 		m[i].src = mSrc
 		m[i].dst = mDst
 		i = i + 1
